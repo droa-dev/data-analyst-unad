@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd 
 import seaborn as sns
 import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.tree import DecisionTreeClassifier
@@ -98,3 +98,39 @@ y_pred_knn = knn.predict(X_test4)
 perform(y_test4, y_pred_knn, objetive_col4)
 print(classification_report(y_test4, y_pred_knn))
 
+#scaler
+scaler = MinMaxScaler()
+ds[feature_cols] = scaler.fit_transform(ds[feature_cols])
+
+ds1 = ds.drop(['Contact_Dont-Know', 'Contact_No', 'Contact_Yes', 'Country', 'None_Experiencing', 'Age_0-9', 'Age_10-19', 'Age_20-24', 'Age_25-59', 'Age_60+', 'Gender_Female', 'Gender_Male', 'Gender_Transgender', 'None_Sympton','Severity_Mild', 'Severity_Moderate', 'Severity_Severe'], axis = 1, inplace = False)
+ds.info()
+train, test = train_test_split(ds, test_size = 0.3, random_state=0)
+
+X_train = train.iloc[:, :19].values
+X_test = test.iloc[:, :19].values
+y_train = train.iloc[:, -1].values
+y_test = test.iloc[:, -1].values
+
+param_grid_knn = {
+    'n_neighbors': [2, 5, 10, 15],                                   
+    'algorithm': ['ball_tree', 'kd_tree', 'brute', 'auto'],          
+    'metric': ['minkowski', 'euclidean', 'manhattan', 'chebyshev']
+}
+
+kNNModel_grid = GridSearchCV(estimator=KNeighborsClassifier(), param_grid=param_grid_knn, verbose=1, cv=10, n_jobs=-1)
+
+kNNModel_grid.fit(X_train, y_train)
+print(kNNModel_grid.best_estimator_)
+
+knn = KNeighborsClassifier(algorithm='ball_tree', n_neighbors=2) #setting up the KNN model to use 2NN
+knn.fit(X_train, y_train) #fitting the KNN
+
+#Checking performance on the training set
+print('Accuracy of K-NN classifier on training set: {:.2f}'
+     .format(knn.score(X_train, y_train)))
+#Checking performance on the test set
+print('Accuracy of K-NN classifier on test set: {:.2f}'
+     .format(knn.score(X_test, y_test)))
+
+y_pred_knn = knn.predict(X_test)
+print(classification_report(y_test, y_pred_knn))
